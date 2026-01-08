@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 #[derive(Parser)]
 #[command(name = "fuzzyserve")]
-#[command(name = "Fuzzy media file server")]
+#[command(about = "Fuzzy media file server")]
 struct Args {
     #[arg(short, long, default_value = ".")]
     media_root: PathBuf,
@@ -33,7 +33,7 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
     let query = path.into_inner();
     let files = scan_media_files(&data.media_root);
 
-    match find_best_match(query, files) {
+    match find_best_match(&query, &files) {
         Some(relative_path) => {
             let location = format!("/files/{}", urlencoding::encode(&relative_path));
             HttpResponse::SeeOther()
@@ -60,35 +60,32 @@ fn scan_media_files(root: &Path) -> Vec<String> {
             e.path()
                 .strip_prefix(root)
                 .ok()
-                .map(|p| p.to_string_lossy().to_string())
+                .map(|p| p.to_string_lossy().into_owned())
         })
         .collect()
 }
 
-fn find_best_match(query: String, files: Vec<String>) -> Option<String> {
+fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
     let query_file_stem = normalize(
         Path::new(&query)
             .file_stem()
             .and_then(|f| f.to_str())
-            .unwrap(),
+            .unwrap_or(query),
     );
 
     files
-        .into_iter()
-        .map(|path| {
-            let file_stem = normalize(
-                Path::new(&path)
-                    .file_stem()
-                    .and_then(|f| f.to_str())
-                    .unwrap(),
-            );
+        .iter()
+        .filter_map(|path| {
+            let file_stem = &normalize(Path::new(path).file_stem()?.to_str()?);
             let score = normalized_levenshtein(&query_file_stem, &file_stem);
-            dbg!(&query_file_stem, &path, &file_stem);
-            dbg!(score);
-            (path, score)
+            Some((path.as_str(), score))
         })
         .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
         .filter(|(_, score)| *score > 0.3)
+        .map(|(path, score)| {
+            dbg!(&path, score);
+            (path, score)
+        })
         .map(|(path, _)| path)
 }
 
@@ -110,11 +107,11 @@ async fn main() -> std::io::Result<()> {
         args.port
     );
 
+    let media_root = args.media_root;
     let state = AppState {
-        media_root: args.media_root.clone(),
+        media_root: media_root.clone(),
     };
 
-    let media_root = args.media_root.clone();
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
