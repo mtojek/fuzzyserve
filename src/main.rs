@@ -4,6 +4,7 @@ use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use clap::Parser;
 use strsim::normalized_levenshtein;
+use walkdir::WalkDir;
 
 #[derive(Parser)]
 #[command(name = "fuzzyserve")]
@@ -46,25 +47,52 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
 const MEDIA_EXTENSIONS: &[&str] = &["mkv", "mp4", "avi", "mov"];
 
 fn scan_media_files(root: &Path) -> Vec<String> {
-    vec![] // TODO
+    WalkDir::new(root)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            e.path()
+                .extension()
+                .and_then(|ext| ext.to_str())
+                .is_some_and(|ext| MEDIA_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()))
+        })
+        .filter_map(|e| {
+            e.path()
+                .strip_prefix(root)
+                .ok()
+                .map(|p| p.to_string_lossy().to_string())
+        })
+        .collect()
 }
 
 fn find_best_match(query: String, files: Vec<String>) -> Option<String> {
-    let normalized_query = normalize(query);
+    let query_file_stem = normalize(
+        Path::new(&query)
+            .file_stem()
+            .and_then(|f| f.to_str())
+            .unwrap(),
+    );
 
     files
         .into_iter()
         .map(|path| {
-            let normalized_name = normalize(path);
-            let score = normalized_levenshtein(&normalized_query, &normalized_name);
-            (normalized_name, score)
+            let file_stem = normalize(
+                Path::new(&path)
+                    .file_stem()
+                    .and_then(|f| f.to_str())
+                    .unwrap(),
+            );
+            let score = normalized_levenshtein(&query_file_stem, &file_stem);
+            dbg!(&query_file_stem, &path, &file_stem);
+            dbg!(score);
+            (path, score)
         })
         .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
         .filter(|(_, score)| *score > 0.3)
         .map(|(path, _)| path)
 }
 
-fn normalize(s: String) -> String {
+fn normalize(s: &str) -> String {
     s.to_lowercase()
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())
