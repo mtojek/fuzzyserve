@@ -8,7 +8,7 @@ use std::{
 use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use clap::Parser;
-use notify::{Watcher, recommended_watcher};
+use notify::{EventKind, Watcher, recommended_watcher};
 use parking_lot::RwLock;
 use strsim::normalized_levenshtein;
 use walkdir::WalkDir;
@@ -42,7 +42,14 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
 
     match find_best_match(&query, &files) {
         Some(relative_path) => {
-            let location = format!("/files/{}", urlencoding::encode(&relative_path));
+            let location = format!(
+                "/files/{}",
+                relative_path
+                    .split('/')
+                    .map(|seg| urlencoding::encode(seg))
+                    .collect::<Vec<_>>()
+                    .join("/")
+            );
             HttpResponse::SeeOther()
                 .insert_header(("Location", location))
                 .finish()
@@ -119,6 +126,10 @@ fn start_watcher(
     thread::spawn(move || {
         let mut watcher = recommended_watcher(move |res: Result<notify::Event, _>| match res {
             Ok(event) => {
+                if matches!(event.kind, EventKind::Access(_)) {
+                    return;
+                }
+
                 let is_media = event.paths.iter().any(|p| {
                     p.extension().and_then(|ext| ext.to_str()).is_some_and(|f| {
                         MEDIA_EXTENSIONS.contains(&f.to_ascii_lowercase().as_str())
