@@ -54,7 +54,7 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
 const MEDIA_EXTENSIONS: &[&str] = &["mkv", "mp4", "avi", "mov"];
 
 fn scan_media_files(root: &Path) -> Vec<String> {
-    WalkDir::new(root)
+    let files: Vec<String> = WalkDir::new(root)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| {
@@ -69,7 +69,13 @@ fn scan_media_files(root: &Path) -> Vec<String> {
                 .ok()
                 .map(|p| p.to_string_lossy().into_owned())
         })
-        .collect()
+        .collect();
+
+    println!("Found {} files", files.len());
+    for f in &files {
+        println!("  {}", f);
+    }
+    files
 }
 
 fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
