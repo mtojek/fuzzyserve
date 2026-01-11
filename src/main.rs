@@ -1,8 +1,15 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, atomic::AtomicBool},
+    thread,
+    time::Duration,
+};
 
 use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use clap::Parser;
+use notify::{Watcher, recommended_watcher};
+use parking_lot::RwLock;
 use strsim::normalized_levenshtein;
 use walkdir::WalkDir;
 
@@ -22,7 +29,7 @@ struct Args {
 
 #[derive(Clone)]
 struct AppState {
-    media_root: PathBuf,
+    files: Arc<RwLock<Vec<String>>>,
 }
 
 async fn index_handler() -> impl Responder {
@@ -31,7 +38,7 @@ async fn index_handler() -> impl Responder {
 
 async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) -> impl Responder {
     let query = path.into_inner();
-    let files = scan_media_files(&data.media_root);
+    let files = data.files.read();
 
     match find_best_match(&query, &files) {
         Some(relative_path) => {
@@ -96,23 +103,73 @@ fn normalize(s: &str) -> String {
         .collect()
 }
 
+fn start_watcher(
+    media_root: PathBuf,
+    files: Arc<RwLock<Vec<String>>>,
+    stop: Arc<AtomicBool>,
+) -> thread::JoinHandle<()> {
+    let media_root_clone = media_root.clone();
+
+    thread::spawn(move || {
+        let mut watcher = recommended_watcher(move |res: Result<notify::Event, _>| match res {
+            Ok(event) => {
+                let is_media = event.paths.iter().any(|p| {
+                    p.extension().and_then(|ext| ext.to_str()).is_some_and(|f| {
+                        MEDIA_EXTENSIONS.contains(&f.to_ascii_lowercase().as_str())
+                    })
+                });
+                if !is_media {
+                    return;
+                }
+
+                dbg!(&event);
+                let new_files = scan_media_files(&media_root_clone);
+                *files.write() = new_files;
+                println!("Reloaded files");
+            }
+            Err(e) => {
+                eprintln!("Watch error: {}", e)
+            }
+        })
+        .unwrap();
+
+        watcher
+            .watch(&media_root, notify::RecursiveMode::Recursive)
+            .unwrap();
+
+        while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+            thread::sleep(Duration::from_millis(100));
+        }
+        println!("Watcher stopped");
+    })
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
+    let media_root = args.media_root;
+    let files: Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, Vec<String>>> =
+        Arc::new(RwLock::new(scan_media_files(&media_root)));
+
+    println!("Media root: {}", media_root.display());
+    println!("Initial scan: {} files", files.read().len());
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let watcher_handle = start_watcher(media_root.clone(), files.clone(), stop.clone());
+
     println!(
         "Serving files from {} on http://{}:{}",
-        args.media_root.display(),
+        media_root.display(),
         args.addr,
         args.port
     );
 
-    let media_root = args.media_root;
-    let state = AppState {
-        media_root: media_root.clone(),
+    let state: AppState = AppState {
+        files: files.clone(),
     };
 
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
             .route("/", web::get().to(index_handler))
@@ -120,6 +177,20 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/files", &media_root).show_files_listing())
     })
     .bind((args.addr, args.port))?
-    .run()
-    .await
+    .run();
+    let server_handle = server.handle();
+
+    let stop_clone = stop.clone();
+    ctrlc::set_handler(move || {
+        println!("Shutting down");
+        stop_clone.store(true, std::sync::atomic::Ordering::Relaxed);
+        let _ = server_handle.stop(true);
+    })
+    .unwrap();
+
+    server.await?;
+    watcher_handle.join().unwrap();
+    println!("Goodbye!");
+
+    Ok(())
 }
