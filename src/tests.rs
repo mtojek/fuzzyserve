@@ -61,3 +61,25 @@ fn test_simpsons_s37e05() {
         Some("The.Simpsons.S37E05.720p.HEVC.x265-MeGusta[EZTVx.to].mkv"),
     )
 }
+
+#[test]
+fn test_simpsons_jumanji() {
+    let files = test_files();
+
+    assert_eq!(
+        find_best_match("jumanji-1995", &files),
+        Some("Jumanji (1995)/Jumanji.1995.720p.BrRip.x264.BOKUTOX.YIFY.mp4"),
+    );
+
+    assert_eq!(
+        find_best_match("jumanji-welcome", &files),
+        Some("Jumanji Welcome to the Jungle.2017.1080p.WEB-DL.6CH.MkvCage.mkv"),
+    );
+
+    assert_eq!(
+        find_best_match("jumanji-2019", &files),
+        Some(
+            "Jumanji The Next Level (2019) [720p] [BluRay] [YTS.MX]/Jumanji.The.Next.Level.2019.720p.BluRay.x264.AAC-[YTS.MX].mp4"
+        ),
+    );
+}

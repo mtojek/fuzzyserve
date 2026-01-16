@@ -8,6 +8,7 @@ use std::{
 use actix_files::Files;
 use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use clap::Parser;
+use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use notify::{EventKind, Watcher, recommended_watcher};
 use parking_lot::RwLock;
 use strsim::normalized_levenshtein;
@@ -86,6 +87,8 @@ fn scan_media_files(root: &Path) -> Vec<String> {
 }
 
 fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
+    let matcher = SkimMatcherV2::default();
+
     let query_file_stem = normalize(
         Path::new(&query)
             .file_stem()
@@ -96,12 +99,11 @@ fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
     files
         .iter()
         .filter_map(|path| {
-            let file_stem = &normalize(Path::new(path).file_stem()?.to_str()?);
-            let score = normalized_levenshtein(&query_file_stem, &file_stem);
+            let file_stem = Path::new(path).file_stem()?.to_str()?;
+            let score = matcher.fuzzy_match(file_stem, &query_file_stem);
             Some((path.as_str(), score))
         })
-        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-        .filter(|(_, score)| *score > 0.3)
+        .max_by_key(|(_, score)| *score)
         .map(|(path, score)| {
             dbg!(&path, score);
             (path, score)
