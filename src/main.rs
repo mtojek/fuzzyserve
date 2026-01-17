@@ -13,6 +13,8 @@ use notify::{EventKind, Watcher, recommended_watcher};
 use parking_lot::RwLock;
 use walkdir::WalkDir;
 
+mod listing;
+
 #[derive(Parser)]
 #[command(name = "fuzzyserve")]
 #[command(about = "Fuzzy media file server")]
@@ -152,7 +154,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(state.clone()))
             .route("/", web::get().to(index_handler))
             .route("/get/{query:.*}", web::get().to(download_handler))
-            .service(Files::new("/files", &media_root).show_files_listing())
+            .service(Files::new("/files", &media_root).files_listing_renderer(listing::dirs_first).show_files_listing())
     })
     .bind((args.addr, args.port))?
     .run();

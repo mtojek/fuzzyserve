@@ -675,7 +675,9 @@ dependencies = [
  "fuzzy-matcher",
  "notify",
  "parking_lot",
+ "percent-encoding",
  "urlencoding",
+ "v_htmlescape",
  "walkdir",
 ]
 
