@@ -11,7 +11,6 @@ use clap::Parser;
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use notify::{EventKind, Watcher, recommended_watcher};
 use parking_lot::RwLock;
-use strsim::normalized_levenshtein;
 use walkdir::WalkDir;
 
 #[derive(Parser)]
@@ -100,14 +99,16 @@ fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
         .iter()
         .filter_map(|path| {
             let file_stem = Path::new(path).file_stem()?.to_str()?;
-            let score = matcher.fuzzy_match(file_stem, &query_file_stem);
+            let score = matcher.fuzzy_match(file_stem, &query_file_stem)?;
             Some((path.as_str(), score))
         })
-        .max_by_key(|(_, score)| *score)
-        .map(|(path, score)| {
-            dbg!(&path, score);
-            (path, score)
+        .inspect(|(path, score)| {
+            dbg!(path, score);
         })
+        // a = first element
+        // b = second element
+        // return first if equal
+        .reduce(|a, b| if b.1 > a.1 { b } else { a })
         .map(|(path, _)| path)
 }
 
