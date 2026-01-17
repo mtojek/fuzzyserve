@@ -42,17 +42,8 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
 
     match find_best_match(&query, &files) {
         Some(relative_path) => {
-            let location = format!(
-                "/files/{}",
-                relative_path
-                    .split('/')
-                    .map(|seg| urlencoding::encode(seg))
-                    .collect::<Vec<_>>()
-                    .join("/")
-            );
-            HttpResponse::SeeOther()
-                .insert_header(("Location", location))
-                .finish()
+            let location = format!("/files/{}", relative_path.split('/').map(|seg| urlencoding::encode(seg)).collect::<Vec<_>>().join("/"));
+            HttpResponse::SeeOther().insert_header(("Location", location)).finish()
         }
         None => HttpResponse::NotFound().body("File not found"),
     }
@@ -64,18 +55,8 @@ fn scan_media_files(root: &Path) -> Vec<String> {
     let files: Vec<String> = WalkDir::new(root)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path()
-                .extension()
-                .and_then(|ext| ext.to_str())
-                .is_some_and(|ext| MEDIA_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str()))
-        })
-        .filter_map(|e| {
-            e.path()
-                .strip_prefix(root)
-                .ok()
-                .map(|p| p.to_string_lossy().into_owned())
-        })
+        .filter(|e| e.path().extension().and_then(|ext| ext.to_str()).is_some_and(|ext| MEDIA_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str())))
+        .filter_map(|e| e.path().strip_prefix(root).ok().map(|p| p.to_string_lossy().into_owned()))
         .collect();
 
     println!("Found {} files", files.len());
@@ -88,12 +69,7 @@ fn scan_media_files(root: &Path) -> Vec<String> {
 fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
     let matcher = SkimMatcherV2::default();
 
-    let query_file_stem = normalize(
-        Path::new(&query)
-            .file_stem()
-            .and_then(|f| f.to_str())
-            .unwrap_or(query),
-    );
+    let query_file_stem = normalize(Path::new(&query).file_stem().and_then(|f| f.to_str()).unwrap_or(query));
 
     files
         .iter()
@@ -113,17 +89,10 @@ fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
 }
 
 fn normalize(s: &str) -> String {
-    s.to_lowercase()
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .collect()
+    s.to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric()).collect()
 }
 
-fn start_watcher(
-    media_root: PathBuf,
-    files: Arc<RwLock<Vec<String>>>,
-    stop: Arc<AtomicBool>,
-) -> thread::JoinHandle<()> {
+fn start_watcher(media_root: PathBuf, files: Arc<RwLock<Vec<String>>>, stop: Arc<AtomicBool>) -> thread::JoinHandle<()> {
     let media_root_clone = media_root.clone();
 
     thread::spawn(move || {
@@ -133,11 +102,10 @@ fn start_watcher(
                     return;
                 }
 
-                let is_media = event.paths.iter().any(|p| {
-                    p.extension().and_then(|ext| ext.to_str()).is_some_and(|f| {
-                        MEDIA_EXTENSIONS.contains(&f.to_ascii_lowercase().as_str())
-                    })
-                });
+                let is_media = event
+                    .paths
+                    .iter()
+                    .any(|p| p.extension().and_then(|ext| ext.to_str()).is_some_and(|f| MEDIA_EXTENSIONS.contains(&f.to_ascii_lowercase().as_str())));
                 if !is_media {
                     return;
                 }
@@ -153,9 +121,7 @@ fn start_watcher(
         })
         .unwrap();
 
-        watcher
-            .watch(&media_root, notify::RecursiveMode::Recursive)
-            .unwrap();
+        watcher.watch(&media_root, notify::RecursiveMode::Recursive).unwrap();
 
         while !stop.load(std::sync::atomic::Ordering::Relaxed) {
             thread::sleep(Duration::from_millis(100));
@@ -169,8 +135,7 @@ async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
     let media_root = args.media_root;
-    let files: Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, Vec<String>>> =
-        Arc::new(RwLock::new(scan_media_files(&media_root)));
+    let files: Arc<parking_lot::lock_api::RwLock<parking_lot::RawRwLock, Vec<String>>> = Arc::new(RwLock::new(scan_media_files(&media_root)));
 
     println!("Media root: {}", media_root.display());
     println!("Initial scan: {} files", files.read().len());
@@ -178,16 +143,9 @@ async fn main() -> std::io::Result<()> {
     let stop = Arc::new(AtomicBool::new(false));
     let watcher_handle = start_watcher(media_root.clone(), files.clone(), stop.clone());
 
-    println!(
-        "Serving files from {} on http://{}:{}",
-        media_root.display(),
-        args.addr,
-        args.port
-    );
+    println!("Serving files from {} on http://{}:{}", media_root.display(), args.addr, args.port);
 
-    let state: AppState = AppState {
-        files: files.clone(),
-    };
+    let state: AppState = AppState { files: files.clone() };
 
     let server = HttpServer::new(move || {
         App::new()

@@ -45,103 +45,40 @@ fn test_files() -> Vec<String> {
     .collect()
 }
 
-#[test]
-fn test_simpsons_s37e05() {
+fn assert_match(query: &str, expected: &str) {
     let files = test_files();
-    let query = "simpsons-s37e05";
-
-    assert_eq!(
-        find_best_match(query, &files),
-        Some("The.Simpsons.S37E05.720p.HEVC.x265-MeGusta[EZTVx.to].mkv"),
-    )
+    assert_eq!(find_best_match(query, &files), Some(expected))
 }
 
 #[test]
-fn test_simpsons_jumanji() {
-    let files = test_files();
+fn test_simpsons_s37e05() {
+    assert_match("simpsons-s37e05", "The.Simpsons.S37E05.720p.HEVC.x265-MeGusta[EZTVx.to].mkv");
+}
 
-    assert_eq!(
-        find_best_match("jumanji-1995", &files),
-        Some("Jumanji (1995)/Jumanji.1995.720p.BrRip.x264.BOKUTOX.YIFY.mp4"),
-    );
-
-    assert_eq!(
-        find_best_match("jumanji-welcome", &files),
-        Some("Jumanji Welcome to the Jungle.2017.1080p.WEB-DL.6CH.MkvCage.mkv"),
-    );
-
-    assert_eq!(
-        find_best_match("jumanji-2019", &files),
-        Some(
-            "Jumanji The Next Level (2019) [720p] [BluRay] [YTS.MX]/Jumanji.The.Next.Level.2019.720p.BluRay.x264.AAC-[YTS.MX].mp4"
-        ),
-    );
+#[test]
+fn test_jumanji() {
+    assert_match("jumanji-1995", "Jumanji (1995)/Jumanji.1995.720p.BrRip.x264.BOKUTOX.YIFY.mp4");
+    assert_match("jumanji-welcome", "Jumanji Welcome to the Jungle.2017.1080p.WEB-DL.6CH.MkvCage.mkv");
+    assert_match("jumanji-2019", "Jumanji The Next Level (2019) [720p] [BluRay] [YTS.MX]/Jumanji.The.Next.Level.2019.720p.BluRay.x264.AAC-[YTS.MX].mp4");
 }
 
 #[test]
 fn test_home_alone() {
-    let files = test_files();
-
-    assert_eq!(
-        find_best_match("home-alone-1990", &files),
-        Some("Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4"),
-    );
-
-    assert_eq!(
-        find_best_match("home alone", &files),
-        Some("Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4"),
-    );
-
-    assert_eq!(
-        find_best_match("home alone 2", &files),
-        Some(
-            "Home Alone 2 Lost in New York (1992) [1080p]/Home.Alone.2.Lost.in.New.York.1992.1080p.BluRay.x264.YIFY.mp4"
-        ),
-    );
+    assert_match("home-alone-1990", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
+    assert_match("home alone", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
+    assert_match("home alone 2", "Home Alone 2 Lost in New York (1992) [1080p]/Home.Alone.2.Lost.in.New.York.1992.1080p.BluRay.x264.YIFY.mp4");
 }
 
 #[test]
 fn test_lethal_weapon() {
-    let files = test_files();
-
-    assert_eq!(
-        find_best_match("lethal-weapon-1", &files),
-        Some("Lethal Weapon (1987) [1080p]/Lethal.Weapon.1987.1080p.BrRip.x264.BOKUTOX.YIFY.mp4"),
-    );
-
-    assert_eq!(
-        find_best_match("lethal-weapon-2", &files),
-        Some(
-            "Lethal Weapon 2 (1989)  [1080p]/Lethal.Weapon.2.1989.1080p.BrRip.x264.BOKUTOX.YIFY.mp4"
-        ),
-    );
-
-    assert_eq!(
-        find_best_match("lethal-weapon-3", &files),
-        Some(
-            "Lethal Weapon 3 (1992) [1080p]/Lethal.Weapon.3.1992.1080p.BrRip.x264.BOKUTOX.YIFY.mp4"
-        ),
-    );
-
-    assert_eq!(
-        find_best_match("lethal-weapon-4", &files),
-        Some(
-            "Lethal Weapon 4 (1998) [1080p]/Lethal.Weapon.4.1998.1080p.BrRip.x264.BOKUTOX.YIFY.mp4"
-        ),
-    );
+    assert_match("lethal-weapon-1", "Lethal Weapon (1987) [1080p]/Lethal.Weapon.1987.1080p.BrRip.x264.BOKUTOX.YIFY.mp4");
+    assert_match("lethal-weapon-2", "Lethal Weapon 2 (1989)  [1080p]/Lethal.Weapon.2.1989.1080p.BrRip.x264.BOKUTOX.YIFY.mp4");
+    assert_match("lethal-weapon-3", "Lethal Weapon 3 (1992) [1080p]/Lethal.Weapon.3.1992.1080p.BrRip.x264.BOKUTOX.YIFY.mp4");
+    assert_match("lethal-weapon-4", "Lethal Weapon 4 (1998) [1080p]/Lethal.Weapon.4.1998.1080p.BrRip.x264.BOKUTOX.YIFY.mp4");
 }
 
 #[test]
 fn test_die_hard() {
-    let files = test_files();
-
-    assert_eq!(
-        find_best_match("die-hard-1", &files),
-        Some("Die Hard (1988) [1080p] {5.1}/Die.Hard.BluRay.1080p.x264.5.1.Judas.mp4"),
-    );
-
-    assert_eq!(
-        find_best_match("die-hard-2", &files),
-        Some("Die Hard 2 (1990) [1080p] {5.1}/Die.Hard.2.BluRay.1080p.x264.5.1.Judas.mp4"),
-    );
+    assert_match("die-hard-1", "Die Hard (1988) [1080p] {5.1}/Die.Hard.BluRay.1080p.x264.5.1.Judas.mp4");
+    assert_match("die-hard-2", "Die Hard 2 (1990) [1080p] {5.1}/Die.Hard.2.BluRay.1080p.x264.5.1.Judas.mp4");
 }
