@@ -1,0 +1,14 @@
+[Unit]
+Description=Fuzzyserve media server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/usr/local/bin/fuzzyserve --media-root /var/www/html --port 7666
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
