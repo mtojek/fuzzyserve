@@ -60,12 +60,15 @@ fn test_jumanji() {
     assert_match("jumanji-1995", "Jumanji (1995)/Jumanji.1995.720p.BrRip.x264.BOKUTOX.YIFY.mp4");
     assert_match("jumanji-welcome", "Jumanji Welcome to the Jungle.2017.1080p.WEB-DL.6CH.MkvCage.mkv");
     assert_match("jumanji-2019", "Jumanji The Next Level (2019) [720p] [BluRay] [YTS.MX]/Jumanji.The.Next.Level.2019.720p.BluRay.x264.AAC-[YTS.MX].mp4");
+
+    assert_match("jumanji-1", "Jumanji (1995)/Jumanji.1995.720p.BrRip.x264.BOKUTOX.YIFY.mp4");
 }
 
 #[test]
 fn test_home_alone() {
-    assert_match("home-alone-1990", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
     assert_match("home alone", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
+    assert_match("home alone 1", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
+    assert_match("home-alone-1990", "Home Alone (1990) [1080p]/Home.Alone.1990.1080p.BluRay.x264.YIFY.mp4");
     assert_match("home alone 2", "Home Alone 2 Lost in New York (1992) [1080p]/Home.Alone.2.Lost.in.New.York.1992.1080p.BluRay.x264.YIFY.mp4");
 }
 
@@ -81,4 +84,11 @@ fn test_lethal_weapon() {
 fn test_die_hard() {
     assert_match("die-hard-1", "Die Hard (1988) [1080p] {5.1}/Die.Hard.BluRay.1080p.x264.5.1.Judas.mp4");
     assert_match("die-hard-2", "Die Hard 2 (1990) [1080p] {5.1}/Die.Hard.2.BluRay.1080p.x264.5.1.Judas.mp4");
+}
+
+#[test]
+fn test_harry_potter() {
+    assert_match("harry-potter-prisoner", "Harry Potter and the Prisoner of Azkaban (2004) 1080p.BRrip.scOrp.sujaidr (pimprg)/Harry Potter and the Prisoner of Azkaban (2004) 1080p.BRrip.scOrp.sujaidr (pimprg).mkv");
+    assert_match("harry-potter-deathly-1", "Harry Potter and the Deathly Hallows Part 1 (2010) [1080p]/Harry.Potter.and.the.Deathly.Hallows.Part.1.2010.1080p.BrRip.x264.YIFY.mp4");
+    assert_match("harry-potter-deathly-2", "Harry Potter and the Deathly Hallows Part 2 (2011) 1080p.BRrip.scOrp.sujaidr (pimprg)/Harry Potter and the Deathly Hallows Part 2 (2011) 1080p.BRrip.scOrp.sujaidr (pimprg).mkv");
 }
