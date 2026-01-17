@@ -43,10 +43,10 @@ Redirects (HTTP 303) to the best matching file.
 
 ```bash
 # Find Simpsons S37E05
-curl -L http://localhost:7666/get/simpsons-s37e05
+curl -L http://localhost:7666/get/yellows-s37e05
 
 # Find Home Alone 2
-curl -L http://localhost:7666/get/home-alone-2
+curl -L http://localhost:7666/get/abandoned-child-2
 ```
 
 ### `GET /files/`
@@ -71,5 +71,5 @@ fuzzyserve
 fuzzyserve -m /srv/media -p 8080
 
 # Use with VLC
-vlc http://localhost:7666/get/simpsons-s37e12
+vlc http://localhost:7666/get/yellows-s37e12
 ```
