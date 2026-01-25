@@ -1,7 +1,7 @@
-use crate::find_best_match;
+use crate::{filter_media_files, find_best_match};
 
 fn test_files() -> Vec<String> {
-    vec![
+    let raw = vec![
         "Exploding Skyscraper 2 (1991) [1080p] {5.1}/Exploding.Skyscraper.2.BluRay.1080p.x264.5.1.Judas.mp4",
         "Exploding Skyscraper (1989) [1080p] {5.1}/Exploding.Skyscraper.BluRay.1080p.x264.5.1.Judas.mp4",
         "Deadly Buddy 4 (1999) [1080p]/Deadly.Buddy.4.1999.1080p.BrRip.x264.BOKUTOX.YIFY.mp4",
@@ -21,6 +21,7 @@ fn test_files() -> Vec<String> {
         "The.Yellows.S37E13.1080p.WEB.h264-EDITH[EZTVx.to].mkv",
         "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E01.720p.BluRay.x264-GalaxyTV.mkv",
         "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E02.720p.BluRay.x264-GalaxyTV.mkv",
+        "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E03.720p.BluRay.x264-GalaxyTV-sample.mkv",
         "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E03.720p.BluRay.x264-GalaxyTV.mkv",
         "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E04.720p.BluRay.x264-GalaxyTV.mkv",
         "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E05.720p.BluRay.x264-GalaxyTV.mkv",
@@ -40,15 +41,22 @@ fn test_files() -> Vec<String> {
         "Artifact Hunter and the Final Quest (1990) [1080p]/Artifact.Hunter.And.The.Final.Quest.1990.1080p.BluRay.x264.YIFY.mp4",
         "Artifact Hunter and the Alien Skull (2009) [1080p]/Artifact.Hunter.And.The.Alien.Skull.2009.1080p.BrRip.x264.YIFY.mp4",
         "Artifact Hunter And The Wheel Of Fate (2024) [1080p] [WEBRip] [5.1] [YTS.MX]/Artifact.Hunter.And.The.Wheel.Of.Fate.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX].mp4",
-    ]
-    .into_iter()
-    .map(String::from)
-    .collect()
+    ];
+
+    filter_media_files(
+        raw.into_iter()
+            .map(String::from),
+    )
 }
 
 fn assert_match(query: &str, expected: &str) {
     let files = test_files();
     assert_eq!(Some(expected), find_best_match(query, &files), "query: {}", query)
+}
+
+fn assert_mo_match(query: &str) {
+    let files = test_files();
+    assert_eq!(None, find_best_match(query, &files), "query should not match: {}", query)
 }
 
 #[test]
@@ -120,7 +128,10 @@ fn test_bobby_wizard() {
 #[test]
 fn test_time_traveler() {
     assert_match("time-traveler-s01e01", "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E01.720p.BluRay.x264-GalaxyTV.mkv");
+    assert_match("time-traveler-s01e02", "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E02.720p.BluRay.x264-GalaxyTV.mkv");
     assert_match("time-traveler-s01e03", "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E03.720p.BluRay.x264-GalaxyTV.mkv");
+    assert_mo_match("time-traveler-s01e03-sample");
+    assert_match("time-traveler-s01e04", "Time.Traveler.2006.S01.COMPLETE.720p.BluRay.x264-GalaxyTV[TGx]/Time.Traveler.2006.S01E04.720p.BluRay.x264-GalaxyTV.mkv");
 }
 
 #[test]

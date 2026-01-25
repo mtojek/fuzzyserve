@@ -68,20 +68,9 @@ async fn download_handler(path: web::Path<String>, data: web::Data<AppState>) ->
 const MEDIA_EXTENSIONS: &[&str] = &["mkv", "mp4", "avi", "mov"];
 
 fn scan_media_files(root: &Path) -> Vec<String> {
-    let files: Vec<String> = WalkDir::new(root)
+    let iter = WalkDir::new(root)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.path()
-                .extension()
-                .and_then(|ext| ext.to_str())
-                .is_some_and(|ext| {
-                    MEDIA_EXTENSIONS.contains(
-                        &ext.to_ascii_lowercase()
-                            .as_str(),
-                    )
-                })
-        })
         .filter_map(|e| {
             e.path()
                 .strip_prefix(root)
@@ -90,14 +79,45 @@ fn scan_media_files(root: &Path) -> Vec<String> {
                     p.to_string_lossy()
                         .into_owned()
                 })
-        })
-        .collect();
+        });
 
+    let files = filter_media_files(iter);
     println!("Found {} files", files.len());
     for f in &files {
         println!("  {}", f);
     }
     files
+}
+
+pub fn filter_media_files<I>(iter: I) -> Vec<String>
+where
+    I: Iterator<Item = String>,
+{
+    // skip non-media-files
+    iter.filter(|p| {
+        Path::new(p)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| {
+                MEDIA_EXTENSIONS.contains(
+                    &ext.to_ascii_lowercase()
+                        .as_str(),
+                )
+            })
+    })
+    // skip media samples
+    .filter(|p| {
+        !Path::new(p)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .is_some_and(|s| {
+                s.to_lowercase()
+                    .ends_with("-sample")
+                    || s.to_lowercase()
+                        .contains(".sample.")
+            })
+    })
+    .collect()
 }
 
 fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
