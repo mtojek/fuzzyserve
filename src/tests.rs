@@ -146,3 +146,9 @@ fn test_artifact_hunter() {
         "Artifact Hunter And The Wheel Of Fate (2024) [1080p] [WEBRip] [5.1] [YTS.MX]/Artifact.Hunter.And.The.Wheel.Of.Fate.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX].mp4",
     );
 }
+
+#[test]
+fn test_query_skip_extension() {
+    assert_match("yellows.s37e01.mkv", "The Yellows S37E01 1080p x265-ELiTE[EZTVx.to].mkv");
+    assert_match("yellows-s37e01.mkv", "The Yellows S37E01 1080p x265-ELiTE[EZTVx.to].mkv");
+}

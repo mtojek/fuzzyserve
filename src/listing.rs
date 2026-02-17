@@ -15,7 +15,11 @@ macro_rules! encode_file_url {
 
 macro_rules! encode_file_name {
     ($entry:ident) => {
-        escape_html_entity(&$entry.file_name().to_string_lossy())
+        escape_html_entity(
+            &$entry
+                .file_name()
+                .to_string_lossy(),
+        )
     };
 }
 
@@ -24,19 +28,44 @@ pub fn dirs_first(dir: &Directory, req: &HttpRequest) -> Result<ServiceResponse,
     let mut body = String::new();
     let base = Path::new(req.path());
 
-    let mut entries: Vec<_> = dir.path.read_dir()?.filter(|e| dir.is_visible(e)).filter_map(|e| e.ok()).collect();
+    let mut entries: Vec<_> = dir
+        .path
+        .read_dir()?
+        .filter(|e| dir.is_visible(e))
+        .filter_map(|e| e.ok())
+        .collect();
 
     // sort: dirs first, by name second
     entries.sort_by(|a, b| {
-        let a_is_dir = a.metadata().map(|m| m.is_dir()).unwrap_or(false);
-        let b_is_dir = b.metadata().map(|m| m.is_dir()).unwrap_or(false);
-        b_is_dir.cmp(&a_is_dir).then_with(|| a.file_name().cmp(&b.file_name()))
+        let a_is_dir = a
+            .metadata()
+            .map(|m| m.is_dir())
+            .unwrap_or(false);
+        let b_is_dir = b
+            .metadata()
+            .map(|m| m.is_dir())
+            .unwrap_or(false);
+        b_is_dir
+            .cmp(&a_is_dir)
+            .then_with(|| {
+                a.file_name()
+                    .cmp(&b.file_name())
+            })
     });
 
     for entry in entries {
-        let p = match entry.path().strip_prefix(&dir.path) {
-            Ok(p) if cfg!(windows) => base.join(p).to_string_lossy().replace('\\', "/"),
-            Ok(p) => base.join(p).to_string_lossy().into_owned(),
+        let p = match entry
+            .path()
+            .strip_prefix(&dir.path)
+        {
+            Ok(p) if cfg!(windows) => base
+                .join(p)
+                .to_string_lossy()
+                .replace('\\', "/"),
+            Ok(p) => base
+                .join(p)
+                .to_string_lossy()
+                .into_owned(),
             Err(_) => continue,
         };
 
@@ -59,5 +88,10 @@ pub fn dirs_first(dir: &Directory, req: &HttpRequest) -> Result<ServiceResponse,
          </ul></body>\n</html>",
         index_of, index_of, body
     );
-    Ok(ServiceResponse::new(req.clone(), HttpResponse::Ok().content_type("text/html; charset=utf-8").body(html)))
+    Ok(ServiceResponse::new(
+        req.clone(),
+        HttpResponse::Ok()
+            .content_type("text/html; charset=utf-8")
+            .body(html),
+    ))
 }

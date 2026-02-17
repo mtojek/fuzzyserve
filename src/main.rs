@@ -127,7 +127,7 @@ fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
             bonus_consecutive: 10,
             ..Default::default()
     });
-    let normalized_query = normalize(&query);
+    let normalized_query = normalize(query_stem(&query));
 
     files
         .iter()
@@ -148,6 +148,12 @@ fn find_best_match<'a>(query: &str, files: &'a [String]) -> Option<&'a str> {
         // return first if equal
         .reduce(|a, b| if b.1 > a.1 { b } else { a })
         .map(|(path, _)| path)
+}
+
+fn query_stem(s: &str) -> &str {
+    s.rsplit_once(".")
+        .filter(|(_, ext)| MEDIA_EXTENSIONS.contains(ext))
+        .map_or(s, |(left, _)| left)
 }
 
 fn normalize(s: &str) -> String {
